@@ -1,10 +1,30 @@
 # The "this" keyword
 
-`this` is a keyword in JavaScript.
+`this` is an environment variable in JavaScript. 
 
-`this` is also an environment variable. In other words, a variable provided by the environment automatically.
+Whenever you execute a function, `this` is implicitly bound to the object that is executing the current function.  
+_'Bound' means 'set equal to'._
 
-`this` refers to the executing context of the current line of code.
+You can say that `this` is bound to the executing object.  
+You can say that `this` is bound to the executing context.
+
+## Everything is an object
+
+This is an object:
+```
+let myObject = {
+	name: 'Bob'
+};
+```
+
+This is also an object:
+```
+function myFunction() {
+	console.log('do something');
+}
+```
+
+For this article, remember that everything in JavaScript is an object.
 
 ## Objects
 
@@ -22,9 +42,25 @@ let customer = {
 
 customer.displayGreeting(); //outputs: Greetings to Bob.
 ```
-_(This style of string formatting, with the `$[]`, is called a Template Literal.)_
+_(This style of string formatting, with the `${}`, is called a Template Literal.)_
 
-If we didn't use the `this` variable inside `displayGreeting`, the result would be `Greetings to .`.
+If we didn't use the `this` variable inside `displayGreeting`, the result would be `Greetings to .` because there is no `name` variable in the scope of that function.
+
+This example works because the `this` of the function is automatically bound to the executing object `customer`.
+
+It does not matter where a function is defined, it only matters where it is executed from:
+```
+function globalDisplayGreeting() {
+	console.log(`Greetings to ${this.name}.`);
+}
+
+let customer = {
+	name: 'Bob',
+	displayGreeting: globalDisplayGreeting
+}
+
+customer.displayGreeting(); //outputs: Greetings to Bob.
+```
 
 ## Event Handlers
 
@@ -50,4 +86,298 @@ button.addEventListener('click', function () {
 </script>
 ```
 
+The button is an object, and we've added a function (the event handler) to that object.  `this` inside the event handler is automatically bound to the executing object `button`.
+
+## Global Functions
+
+Global functions are functions defined in the global scope.  The executing object of all global functions is the global object, also called the `window`.
+
+```
+function isWindow(object) {
+	return (object == window);
+}
+
+function doSomething() {
+	console.log('Doing something.');
+	console.log(`this equals the window: ${isWindow(this)}`);
+}
+
+doSomething();
+
+//outputs: 
+//  Doing something.
+//  this equals the window: true
+```
+
+When you use nested functions, the inner functions will still run in the global context.
+
+In this example, we are explicitly binding `doSomething`'s `this` to the object `bob`.  Note that `innerDoSomething` still has its `this` bound to the `window`.
+
+```
+let bob = {
+	name: 'Bob'
+};
+
+function isWindow(object) {
+	return (object == window);
+}
+
+function doSomething() {
+	console.log('Doing something.');
+	console.log(`this is ${this.name}`);
+	innerDoSomething();
+	
+	function innerDoSomething() {
+		console.log('Inner doing something.');
+		console.log(`this equals the window: ${isWindow(this)}`);
+		console.log(this.name);
+	}
+}
+
+doSomething.call(bob);
+
+//outputs: 
+//  Doing something.
+//  this is Bob
+//  Inner doing something.
+//  this equals the window: true
+```
+
+## Function as constructor
+
+If you use the `new` keyword on a function call, you instantiate a new object.  
+
+`this` inside a constructor is bound to the new object being instantiated.
+
+```
+function customer(name) {
+	this.name = name;
+	this.displayGreeting = function() {
+		console.log(`Greetings to ${this.name}.`);
+	};
+}
+
+let bob = new customer('Bob');
+
+bob.displayGreeting(); //outputs: Greetings to Bob.
+```
+
 ## Callbacks
+
+A callback is a function (A) that is passed into another function (B), to be run at the end of function (B).  This is where `this` gets more complicated.
+
+Here's a simple example of a callback:
+```
+function doSomething(callback) {
+	console.log('Doing something.');
+	callback();
+}
+
+doSomething(function() {
+	console.log('Finished.');
+});
+
+//outputs: 
+//  Doing something.
+//  Finished.
+```
+
+What is the value of `this` inside these functions?  In both cases, `this` is equal to the `window` (or the global object), because the global scope is where these functions are defined.
+
+```
+function isWindow(object) {
+	return (object == window);
+}
+
+function doSomething(callback) {
+	console.log('Doing something.');
+	console.log(`this equals the window: ${isWindow(this)}`);
+	callback();
+}
+
+doSomething(function() {
+	console.log('Finished.');
+	console.log(`this equals the window: ${isWindow(this)}`);
+});
+
+//outputs: 
+//  Doing something.
+//  this equals the window: true
+//  Finished.
+//  this equals the window: true
+```
+
+When you use nested functions, remember that the inner function has access to all the variables of the outer function.  This includes the `this` variable.  So if the outer function has `this` bound to the `window`, then all inner functions will as well.
+
+```
+function isWindow(object) {
+	return (object == window);
+}
+
+function doSomething(callback) {
+	console.log('Doing something.');
+	console.log(`this equals the window: ${isWindow(this)}`);
+	innerDoSomething(callback);
+	callback();
+	
+	function innerDoSomething(callback) {
+		console.log('Inner doing something.');
+		console.log(`this equals the window: ${isWindow(this)}`);
+		callback();
+	}
+}
+
+doSomething(function() {
+	console.log('Finished.');
+	console.log(`this equals the window: ${isWindow(this)}`);
+});
+
+//outputs: 
+//  Doing something.
+//  this equals the window: true
+//  Inner doing something.
+//  this equals the window: true
+//  Finished.
+//  this equals the window: true
+//  Finished.
+//  this equals the window: true
+```
+
+??? why doesn't that callback say "Google" ???
+
+```
+function isWindow(object) {
+	return (object == window);
+}
+
+let customer = {
+	name: 'Bob',
+	test: function(callback) {
+		console.log('Inside customer object.');
+		console.log(`this.name is ${this.name}`);
+		callback();
+	}
+};
+
+let company = {
+	name: 'Google',
+	test: function() {
+		console.log('Inside company object.');
+		console.log(`this.name is ${this.name}`);
+		customer.test(this.callback);
+	},
+	callback: function() {
+		console.log('Inside callback function.');
+		console.log(`this equals the window: ${isWindow(this)}`);
+	}
+}
+
+company.test();
+
+//outputs: 
+//  Inside company object.
+//  this.name is Google
+//  Inside customer object.
+//  this.name is Bob
+//  Inside callback function.
+//  this equals the window: true
+```
+
+## Explicit bindings
+
+You can override the implicit binding of `this` with an explicit binding.
+
+### call()
+
+`call` will execute a function and will explicitly bind its `this` to whatever object you provide.
+
+It also accepts arguments for the function.
+
+```
+let customerBob = {
+	name: 'Bob',
+	displayGreeting: function(company) {
+		console.log(`Greetings to ${this.name} from ${company}`);
+	}
+}
+let customerJane = {
+	name: 'Jane',
+	displayGreeting: function(company) {
+		console.log(`Greetings to ${this.name} from ${company}`);
+	}
+}
+
+customerBob.displayGreeting.call(customerJane, 'Google'); //outputs: Greetings to Jane from Google
+```
+
+### apply()
+
+`apply` will execute a function and will explicitly bind its `this` to whatever object you provide.
+
+It also accepts an array of arguments for the function.
+
+```
+let customerBob = {
+	name: 'Bob',
+	displayGreeting: function(company) {
+		console.log(`Greetings to ${this.name} from ${company}`);
+	}
+}
+let customerJane = {
+	name: 'Jane',
+	displayGreeting: function(company) {
+		console.log(`Greetings to ${this.name} from ${company}`);
+	}
+}
+
+customerBob.displayGreeting.apply(customerJane, ['Google']); //outputs: Greetings to Jane from Google
+```
+
+### bind()
+
+`bind` will return a new function. When you run the new function, its `this` will be explicitly bound to whatever object you provided.
+
+```
+let customerBob = {
+	name: 'Bob',
+	displayGreeting: function() {
+		console.log(`Greetings to ${this.name}`);
+	}
+}
+let customerJane = {
+	name: 'Jane',
+	displayGreeting: function() {
+		console.log(`Greetings to ${this.name}`);
+	}
+}
+
+let janeDisplayGreeting = customerBob.displayGreeting.bind(customerJane);
+
+janeDisplayGreeting(); //outputs: Greetings to Jane
+```
+
+### Hard Binding
+
+Hard binding is a trick to ensure that every time function (A) is called, it always has `this` bound to the same object.
+
+```
+function displayGreeting() {
+	console.log(`Greetings to ${this.name}`);
+}
+
+let customerBob = { 
+	name: 'Bob'
+};
+let customerJane = { 
+	name: 'Jane'
+};
+
+let temp = displayGreeting;
+displayGreeting = function() { 
+	temp.call(customerBob); //this is the hard binding
+};
+
+displayGreeting(); //outputs: Greetings to Bob
+
+displayGreeting.call(customerJane); //outputs: Greetings to Bob
+```
