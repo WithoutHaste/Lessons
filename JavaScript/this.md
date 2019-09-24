@@ -234,10 +234,10 @@ __The callback problem: callbacks, by their nature, are executed by a different 
 
 The callback problem is the main reason arrow functions were added to JavaScript.
 
-Arrow functions do not bind `this` the way other function types do.  
-__With arrow functions, `this` is bound to the executing object that defined the arrow function__.  
+Arrow functions do not bind `this` to the object that __executes__ them.  
+Arrow functions bind `this` to the object that __defined__ them.  
 
-Keep this behavior difference in mind anytime you use arrow functions.
+Keep this behavior difference in mind anytime you use arrow functions.  This behavior is different from all other ways of defining functions.
 
 If we alter the previous example to use arrow functions, we'll see the results we wanted.
 ```
