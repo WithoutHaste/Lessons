@@ -182,68 +182,9 @@ doSomething(function() {
 //  Finished.
 ```
 
-What is the value of `this` inside these functions?  In both cases, `this` is equal to the `window` (or the global object), because the global scope is where these functions are defined.
+Remember that in global functions, `this` is just bound to the `window` object, which is not very useful.
 
-```
-function isWindow(object) {
-	return (object == window);
-}
-
-function doSomething(callback) {
-	console.log('Doing something.');
-	console.log(`this equals the window: ${isWindow(this)}`);
-	callback();
-}
-
-doSomething(function() {
-	console.log('Finished.');
-	console.log(`this equals the window: ${isWindow(this)}`);
-});
-
-//outputs: 
-//  Doing something.
-//  this equals the window: true
-//  Finished.
-//  this equals the window: true
-```
-
-When you use nested functions, remember that the inner function has access to all the variables of the outer function.  This includes the `this` variable.  So if the outer function has `this` bound to the `window`, then all inner functions will as well.
-
-```
-function isWindow(object) {
-	return (object == window);
-}
-
-function doSomething(callback) {
-	console.log('Doing something.');
-	console.log(`this equals the window: ${isWindow(this)}`);
-	innerDoSomething(callback);
-	callback();
-	
-	function innerDoSomething(callback) {
-		console.log('Inner doing something.');
-		console.log(`this equals the window: ${isWindow(this)}`);
-		callback();
-	}
-}
-
-doSomething(function() {
-	console.log('Finished.');
-	console.log(`this equals the window: ${isWindow(this)}`);
-});
-
-//outputs: 
-//  Doing something.
-//  this equals the window: true
-//  Inner doing something.
-//  this equals the window: true
-//  Finished.
-//  this equals the window: true
-//  Finished.
-//  this equals the window: true
-```
-
-??? why doesn't that callback say "Google" ???
+Let's use objects instead, so we see that happens with `this`.
 
 ```
 function isWindow(object) {
@@ -281,6 +222,87 @@ company.test();
 //  this.name is Bob
 //  Inside callback function.
 //  this equals the window: true
+```
+
+You might have guessed that `Inside callback function` would have been followed by another `this.name is Google`. But instead, we got another `this equals the window: true`. 
+
+That's because `this` is determined by where a function is executed, not by where it was defined. As with the nested function example earlier, the inner function has been executed in the global scope.
+
+__The callback problem: callbacks, by their nature, are executed by a different context than defines them. How can they access the `this` value we expect them to?__
+
+### Arrow Functions
+
+The callback problem is the main reason arrow functions were added to JavaScript.
+
+Arrow functions do not bind `this` the way other function types do.  
+__With arrow functions, `this` is bound to the executing object that defined the arrow function__.  
+
+Keep this behavior difference in mind anytime you use arrow functions.
+
+If we alter the previous example to use arrow functions, we'll see the results we wanted.
+```
+let customer = {
+	name: 'Bob',
+	test: function(callback) {
+		console.log('Inside customer object.');
+		console.log(`this.name is ${this.name}`);
+		callback();
+	}
+};
+
+let company = {
+	name: 'Google',
+	test: function() {
+		console.log('Inside company object.');
+		console.log(`this.name is ${this.name}`);
+		customer.test(() => this.callback()); //here's the arrow function
+	},
+	callback: function() {
+		console.log('Inside callback function.');
+		console.log(`this.name is ${this.name}`);
+	}
+}
+
+company.test();
+
+//outputs: 
+//  Inside company object.
+//  this.name is Google
+//  Inside customer object.
+//  this.name is Bob
+//  Inside callback function.
+//  this.name is Google
+```
+
+Timeouts are a common reason to use an arrow function:
+```
+let customer = {
+	name: 'Bob',
+	delayedGreeting: function() {
+		setTimeout(
+			() => console.log(`Greetings to ${this.name}.`),
+			3000
+		);
+	}
+};
+
+customer.delayedGreeting(); //outputs: Greetings to Bob.
+```
+We use an arrow function here because the callback we define will be executed from the `setTimeout` event handler. If we want access to the object that set the timeout, we must use the special `this` binding behavior of arrow functions.
+
+Try it with a normal function to see the difference:
+```
+let customer = {
+	name: 'Bob',
+	delayedGreeting: function() {
+		setTimeout(
+			function() { console.log(`Greetings to ${this.name}.`); },
+			3000
+		);
+	}
+};
+
+customer.delayedGreeting(); //outputs: Greetings to .
 ```
 
 ## Explicit bindings
