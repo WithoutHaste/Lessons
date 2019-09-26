@@ -8,23 +8,38 @@ _'Bound' means 'set equal to'._
 You can say that `this` is bound to the executing object.  
 You can say that `this` is bound to the executing context.
 
-## Everything is an object
+## Functions vs Methods
 
-This is an object:
+A method is attached to an object.
 ```
-let myObject = {
-	name: 'Bob'
+let customer = {
+	name: 'Bob',
+	getName: function() {
+		return this.name;
+	}
 };
 ```
 
-This is also an object:
+A function is not attached to an object. It is defined in the global scope, within another function or method, or is passed as a parameter.
 ```
-function myFunction() {
-	console.log('do something');
+function doSomething() {
+	console.log('something');
+	
+	function innerDoSomething() {
+		console.log('inner something');
+	}
 }
 ```
 
-For this article, remember that everything in JavaScript is an object.
+```
+function runCallback(callback) {
+	callback();
+}
+
+runCallback(function() {
+	console.log('something');
+});
+```
 
 ## Objects
 
