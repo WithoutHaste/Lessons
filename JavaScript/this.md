@@ -1,4 +1,4 @@
-Link: www.GitHub.com/WithoutHaste/Lessons/JavaScript/this.md
+Link: www.GitHub.com/WithoutHaste/Lessons > JavaScript > this.md
 
 # The "this" keyword
 
